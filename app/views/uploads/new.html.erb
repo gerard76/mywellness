@@ -1,0 +1,16 @@
+<h1>Upload Data</h1>
+
+<div class="upload-box">
+  <%= form_with url: uploads_path, method: :post, multipart: true, local: true do |f| %>
+    <label>Select your Technogym JSON export</label>
+    <%= f.file_field :file, accept: ".json" %>
+    <p class="hint">
+      Export from the Technogym app: Profile → View full profile → Profile Settings → Export Data.<br>
+      The file is named <em>indooractivities-…json</em>. Uploading the same file twice is safe — duplicates are skipped.
+    </p>
+    <div style="margin-top:1.25rem;">
+      <%= f.submit "Import", class: "btn primary" %>
+      <%= link_to "Cancel", root_path, class: "btn", style: "margin-left:8px" %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <%= yield :head %>
+  <title>Mywellness Tracker</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg2: #f5f5f3;
+      --bg3: #ebebea;
+      --text: #1a1a18;
+      --text2: #6b6b68;
+      --text3: #9b9b98;
+      --border: rgba(0,0,0,0.1);
+      --border2: rgba(0,0,0,0.18);
+      --radius: 8px;
+      --radius-lg: 12px;
+      --green-bg: #EAF3DE; --green-text: #3B6D11;
+      --red-bg: #FCEBEB;   --red-text: #A32D2D;
+      --blue-bg: #E6F1FB;  --blue-text: #185FA5;
+      --teal-bg: #E1F5EE;  --teal-text: #0F6E56;
+      --amber-bg: #FAEEDA; --amber-text: #854F0B;
+      --coral-bg: #FAECE7; --coral-text: #993C1D;
+      --gray-bg: #F1EFE8;  --gray-text: #5F5E5A;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a18; --bg2: #242422; --bg3: #2e2e2c;
+        --text: #f0efe8; --text2: #a8a8a4; --text3: #6b6b68;
+        --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.18);
+        --green-bg: #173404; --green-text: #97C459;
+        --red-bg: #501313;   --red-text: #F09595;
+        --blue-bg: #042C53;  --blue-text: #85B7EB;
+        --teal-bg: #04342C;  --teal-text: #5DCAA5;
+        --amber-bg: #412402; --amber-text: #EF9F27;
+        --coral-bg: #4A1B0C; --coral-text: #F0997B;
+        --gray-bg: #2C2C2A;  --gray-text: #B4B2A9;
+      }
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+
+    nav { background: var(--bg2); border-bottom: 0.5px solid var(--border); padding: 0 1.5rem; display: flex; align-items: center; gap: 2rem; height: 52px; }
+    nav .brand { font-weight: 500; font-size: 15px; color: var(--text); text-decoration: none; }
+    nav a { color: var(--text2); text-decoration: none; font-size: 14px; padding: 4px 0; border-bottom: 2px solid transparent; }
+    nav a:hover, nav a.active { color: var(--text); border-bottom-color: var(--text); }
+
+    .flash { padding: .6rem 1.5rem; font-size: 13px; }
+    .flash.notice { background: var(--green-bg); color: var(--green-text); }
+    .flash.alert  { background: var(--red-bg);   color: var(--red-text); }
+
+    main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+
+    h1 { font-size: 20px; font-weight: 500; margin-bottom: 1.25rem; }
+    h2 { font-size: 15px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; margin: 1.5rem 0 .6rem; }
+
+    .metric-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.5rem; }
+    .metric-card { background: var(--bg2); border-radius: var(--radius); padding: 1rem; }
+    .metric-card .label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+    .metric-card .value { font-size: 22px; font-weight: 500; }
+    .metric-card .sub   { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+    .legend-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+    .leg-btn { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; border: 1.5px solid; font-size: 12px; cursor: pointer; background: transparent; color: var(--text); transition: opacity .15s; }
+    .leg-btn.hidden { opacity: .3; }
+    .leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .chart-wrap { position: relative; width: 100%; height: 340px; margin-bottom: 1.5rem; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 6px 8px; color: var(--text2); font-weight: 400; border-bottom: 0.5px solid var(--border); }
+    td { padding: 6px 8px; border-bottom: 0.5px solid var(--border); color: var(--text); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+    .badge.up   { background: var(--green-bg); color: var(--green-text); }
+    .badge.down { background: var(--red-bg);   color: var(--red-text); }
+    .badge.group-arms    { background: var(--coral-bg); color: var(--coral-text); }
+    .badge.group-chest   { background: var(--blue-bg);  color: var(--blue-text); }
+    .badge.group-back    { background: var(--teal-bg);  color: var(--teal-text); }
+    .badge.group-core    { background: var(--amber-bg); color: var(--amber-text); }
+    .badge.group-legs    { background: var(--green-bg); color: var(--green-text); }
+    .badge.group-other   { background: var(--gray-bg);  color: var(--gray-text); }
+    .badge.group-unknown { background: var(--gray-bg);  color: var(--gray-text); }
+
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .name-cell { display: flex; align-items: center; gap: 7px; }
+
+    input[type=text], select { background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); padding: 5px 9px; font-size: 13px; color: var(--text); width: 100%; }
+    input[type=text]:focus, select:focus { outline: 2px solid var(--blue-text); outline-offset: 1px; }
+    input[type=file] { font-size: 13px; color: var(--text2); }
+
+    .btn { display: inline-block; padding: 6px 14px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: transparent; color: var(--text); font-size: 13px; cursor: pointer; }
+    .btn:hover { background: var(--bg2); }
+    .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .btn.primary:hover { opacity: .85; }
+    .btn.small { padding: 3px 10px; font-size: 12px; }
+
+    .upload-box { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; max-width: 480px; }
+    .upload-box label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+    .upload-box .hint { font-size: 12px; color: var(--text3); margin-top: 1rem; }
+
+    .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+    .tab-btn { padding: 5px 14px; font-size: 12px; cursor: pointer; border: 0.5px solid var(--border); background: transparent; color: var(--text2); border-radius: 20px; }
+    .tab-btn.active { background: var(--bg2); color: var(--text); font-weight: 500; }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/" class="brand">Mywellness</a>
+    <a href="/" class="<%= 'active' if controller_name == 'home' %>">Dashboard</a>
+    <a href="/machines" class="<%= 'active' if controller_name == 'machines' %>">Machine Settings</a>
+    <a href="/uploads/new" class="<%= 'active' if controller_name == 'uploads' %>">Upload Data</a>
+    <a href="/settings" class="<%= 'active' if controller_name == 'settings' %>">Settings</a>
+  </nav>
+
+  <% flash.each do |type, msg| %>
+    <div class="flash <%= type %>"><%= msg %></div>
+  <% end %>
+
+  <main>
+    <%= yield %>
+  </main>
+</body>
+</html>
