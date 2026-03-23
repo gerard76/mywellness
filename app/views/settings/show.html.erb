@@ -1,0 +1,26 @@
+<h1>Settings</h1>
+
+<div style="max-width:560px;">
+  <h2>Mywellness credentials</h2>
+  <p style="font-size:13px; color:var(--text2); margin-bottom:1rem;">
+    Stored locally in SQLite on your Mac only — never sent anywhere except directly to <code>v1.mywellness.com</code>.
+  </p>
+
+  <%= form_with url: settings_path, method: :patch, local: true do |f| %>
+    <div style="margin-bottom:1rem;">
+      <label style="display:block; font-size:13px; color:var(--text2); margin-bottom:4px;">Username / Email</label>
+      <input type="text" name="username" value="<%= @username %>" placeholder="your@email.com" style="max-width:360px;">
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label style="display:block; font-size:13px; color:var(--text2); margin-bottom:4px;">Password</label>
+      <input type="password" name="password"
+        placeholder="<%= @has_password ? '●●●●●●●● (saved — leave blank to keep)' : 'Enter password' %>"
+        style="max-width:360px;">
+    </div>
+    <div style="margin-bottom:1.25rem;">
+      <label style="display:block; font-size:13px; color:var(--text2); margin-bottom:4px;">Club slug</label>
+      <input type="text" name="club_slug" value="<%= @club_slug %>" placeholder="vouershof" style="max-width:360px;">
+    </div>
+    <button type="submit" class="btn primary">Save credentials</button>
+  <% end %>
+</div>

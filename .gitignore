@@ -1,0 +1,33 @@
+# SQLite databases (contain personal workout data)
+/storage/*.sqlite3
+/storage/*.sqlite3-journal
+/storage/*.sqlite3-shm
+/storage/*.sqlite3-wal
+
+# Temp files
+/tmp/*
+!/tmp/.keep
+
+# Logs
+/log/*
+!/log/.keep
+
+# Environment secrets
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# Ruby/bundler
+.bundle/
+vendor/bundle/
+
+# Node
+/node_modules
+/yarn-error.log
+
+# Rails
+/public/assets
+/public/packs
+*.orig

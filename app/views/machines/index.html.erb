@@ -1,0 +1,46 @@
+<h1>Machine Settings</h1>
+<p style="color:var(--text2); font-size:13px; margin-bottom:1.5rem;">
+  Match each phId to a machine name and muscle group. New phIds appear automatically after uploading data.
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>phId</th>
+      <th>Latest TotalIsoWeight</th>
+      <th style="width:220px">Machine Name</th>
+      <th style="width:180px">Muscle Group</th>
+      <th style="width:80px"></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @machines.each do |machine| %>
+      <tr>
+        <td style="font-family:monospace; font-size:11px; color:var(--text2);"><%= machine.ph_id %></td>
+        <td style="color:var(--text2);"><%= machine.latest_total_iso_weight ? "#{machine.latest_total_iso_weight} kg" : "—" %></td>
+        <td>
+          <%= form_with model: machine, url: machine_path(machine), method: :patch, local: true, id: "form_#{machine.id}" do |f| %>
+            <%= f.text_field :name, placeholder: "e.g. Leg Press", value: machine.name %>
+            <%= f.hidden_field :muscle_group, id: "mg_hidden_#{machine.id}", value: machine.muscle_group %>
+          <% end %>
+        </td>
+        <td>
+          <select onchange="document.getElementById('mg_hidden_<%= machine.id %>').value = this.value">
+            <% Machine::MUSCLE_GROUPS.each do |g| %>
+              <option value="<%= g %>" <%= 'selected' if machine.muscle_group == g %>><%= g %></option>
+            <% end %>
+          </select>
+        </td>
+        <td>
+          <button type="submit" form="form_<%= machine.id %>" class="btn small primary">Save</button>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<% if @machines.empty? %>
+  <p style="text-align:center; padding:3rem; color:var(--text2);">
+    No machines yet. <%= link_to "Upload data", new_upload_path %> to get started.
+  </p>
+<% end %>

@@ -1,0 +1,23 @@
+<% content_for :head do %>
+  <meta http-equiv="refresh" content="<%= @refresh_seconds %>">
+<% end %>
+
+<div style="text-align:center; padding: 4rem 1rem;">
+  <% if @export_status == "pending" || (@export_id == @last_id) %>
+    <p style="font-size:18px; font-weight:500; margin-bottom:.5rem;">Generating your export...</p>
+    <p style="color:var(--text2); margin-bottom:1.5rem;">
+      Mywellness is preparing your data. This page refreshes automatically every <%= @refresh_seconds %> seconds.
+    </p>
+    <div style="font-size:13px; color:var(--text3);">Checking again in <%= @refresh_seconds %>s...</div>
+  <% elsif @export_status == "none" %>
+    <p style="font-size:18px; font-weight:500; margin-bottom:.5rem;">Waiting for export...</p>
+    <p style="color:var(--text2); margin-bottom:1.5rem;">No export found yet. Page refreshes every <%= @refresh_seconds %> seconds.</p>
+  <% else %>
+    <p style="font-size:18px; font-weight:500; margin-bottom:.5rem;">Export ready!</p>
+    <p style="color:var(--text2); margin-bottom:1.5rem;">Downloading and importing...</p>
+  <% end %>
+
+  <p style="margin-top:2rem;">
+    <%= link_to "Cancel — go to dashboard", root_path, class: "btn" %>
+  </p>
+</div>

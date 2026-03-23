@@ -1,0 +1,209 @@
+<% if @chart_data.empty? %>
+  <div style="text-align:center; padding: 4rem 1rem; color: var(--text2);">
+    <p style="font-size:18px; font-weight:500; margin-bottom:.5rem;">No workout data yet</p>
+    <p style="margin-bottom:1.5rem;">Upload your Technogym JSON export to get started.</p>
+    <%= link_to "Upload Data", new_upload_path, class: "btn primary" %>
+  </div>
+<% else %>
+
+<% if @notice %>
+  <div class="flash notice"><%= @notice %></div>
+<% end %>
+<% if @alert %>
+  <div class="flash alert"><%= @alert %></div>
+<% end %>
+
+<%
+  group_colors = {
+    "Arms"             => "#D85A30",
+    "Chest & Shoulders"=> "#185FA5",
+    "Back"             => "#1D9E75",
+    "Core"             => "#BA7517",
+    "Legs"             => "#3B6D11",
+    "Other"            => "#888780"
+  }
+  group_badge = {
+    "Arms"             => "group-arms",
+    "Chest & Shoulders"=> "group-chest",
+    "Back"             => "group-back",
+    "Core"             => "group-core",
+    "Legs"             => "group-legs",
+    "Other"            => "group-other"
+  }
+
+  palette = [
+    "#D85A30","#993C1D","#4A1B0C",
+    "#185FA5","#042C53","#378ADD","#85B7EB",
+    "#1D9E75","#0F6E56","#5DCAA5",
+    "#BA7517","#412402",
+    "#3B6D11","#27500A","#639922",
+    "#888780","#5F5E5A"
+  ]
+
+  all_dates = @chart_data.flat_map { |d| d[:data].map { |p| p[:date] } }.uniq.sort
+  total_days = all_dates.size
+
+  best = @progress.max_by { |p| p[:pct_change] }
+  named_count = @chart_data.count { |d| d[:named] }
+%>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+  <h1 style="margin:0">Dashboard</h1>
+  <div style="display:flex; gap:8px;">
+    <%= form_with url: generate_sync_path, method: :post, local: true, style: "display:inline" do %>
+      <button type="submit" class="btn primary">↓ Sync from mywellness</button>
+    <% end %>
+  </div>
+</div>
+
+<div class="metric-row">
+  <div class="metric-card">
+    <div class="label">Workout days</div>
+    <div class="value"><%= total_days %></div>
+    <div class="sub"><%= all_dates.first %> – <%= all_dates.last %></div>
+  </div>
+  <div class="metric-card">
+    <div class="label">Machines tracked</div>
+    <div class="value"><%= @chart_data.size %></div>
+    <div class="sub"><%= named_count %> named, <%= @chart_data.size - named_count %> unnamed</div>
+  </div>
+  <% if best %>
+  <div class="metric-card">
+    <div class="label">Top gainer (baseline → latest)</div>
+    <div class="value"><%= best[:pct_change] > 0 ? "+#{best[:pct_change]}" : best[:pct_change] %>%</div>
+    <div class="sub"><%= best[:name] %></div>
+  </div>
+  <% end %>
+</div>
+
+<h2>Rm1 progress — click legend to toggle</h2>
+
+<div class="tabs" id="group-tabs">
+  <button class="tab-btn active" data-group="All">All</button>
+  <% ["Chest & Shoulders","Back","Arms","Core","Legs","Other"].each do |g| %>
+    <% next unless @chart_data.any? { |d| d[:muscle_group] == g } %>
+    <button class="tab-btn" data-group="<%= g %>"><%= g %></button>
+  <% end %>
+</div>
+
+<div class="legend-wrap" id="legend">
+  <% @chart_data.each_with_index do |d, i| %>
+    <% color = group_colors[d[:muscle_group]] || palette[i % palette.size] %>
+    <button class="leg-btn" data-idx="<%= i %>" data-group="<%= d[:muscle_group] %>" style="border-color:<%= color %>">
+      <span class="leg-dot" style="background:<%= color %>"></span>
+      <%= d[:name] %>
+    </button>
+  <% end %>
+</div>
+
+<div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+
+<h2>Station progress (baseline → latest)</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Machine</th>
+      <th>Group</th>
+      <th>Baseline</th>
+      <th>Latest</th>
+      <th>Change</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @progress.each_with_index do |d, i| %>
+      <% color = group_colors[d[:muscle_group]] || palette[i % palette.size] %>
+      <tr>
+        <td><span class="name-cell"><span class="dot" style="background:<%= color %>"></span><%= d[:name] %></span></td>
+        <td><span class="badge <%= group_badge[d[:muscle_group]] || 'group-unknown' %>"><%= d[:muscle_group] %></span></td>
+        <td><%= d[:baseline][:rm1] %> kg</td>
+        <td><%= d[:latest][:rm1] %> kg</td>
+        <td><span class="badge <%= d[:pct_change] >= 0 ? 'up' : 'down' %>"><%= d[:pct_change] > 0 ? "+#{d[:pct_change]}" : d[:pct_change] %>%</span></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
+<script>
+const chartData = <%= raw @chart_data.to_json %>;
+const groupColors = <%= raw group_colors.to_json %>;
+const palette = <%= raw palette.to_json %>;
+const allDates = <%= raw all_dates.to_json %>;
+
+function fmt(d) {
+  const [, m, day] = d.split('-');
+  return `${parseInt(day)} Mar`;
+}
+
+function colorFor(d, i) {
+  return groupColors[d.muscle_group] || palette[i % palette.length];
+}
+
+const datasets = chartData.map((d, i) => {
+  const map = Object.fromEntries(d.data.map(p => [p.date, p.rm1]));
+  return {
+    label: d.name,
+    data: allDates.map(dt => map[dt] ?? null),
+    borderColor: colorFor(d, i),
+    backgroundColor: colorFor(d, i) + '22',
+    borderWidth: 2,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    tension: 0.3,
+    spanGaps: false,
+    hidden: false
+  };
+});
+
+const chart = new Chart(document.getElementById('mainChart').getContext('2d'), {
+  type: 'line',
+  data: { labels: allDates.map(fmt), datasets },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: items => items[0].label,
+          label: item => item.raw != null ? ` ${item.dataset.label}: ${item.raw.toFixed(1)} kg` : null
+        }
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { color: '#888', font: { size: 11 }, maxRotation: 45 } },
+      y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { color: '#888', font: { size: 11 }, callback: v => v + ' kg' } }
+    }
+  }
+});
+
+// Legend toggle
+document.querySelectorAll('.leg-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const i = parseInt(btn.dataset.idx);
+    chart.data.datasets[i].hidden = !chart.data.datasets[i].hidden;
+    btn.classList.toggle('hidden', chart.data.datasets[i].hidden);
+    chart.update();
+  });
+});
+
+// Group tab filter
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const group = btn.dataset.group;
+    chartData.forEach((d, i) => {
+      const show = group === 'All' || d.muscle_group === group;
+      chart.data.datasets[i].hidden = !show;
+    });
+    document.querySelectorAll('.leg-btn').forEach(btn2 => {
+      const show = group === 'All' || btn2.dataset.group === group;
+      btn2.classList.toggle('hidden', !show || chart.data.datasets[parseInt(btn2.dataset.idx)].hidden);
+    });
+    chart.update();
+  });
+});
+</script>
+
+<% end %>
