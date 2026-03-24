@@ -10,6 +10,8 @@ A local Rails app to track your progress on the Technogym machine circuit. It sy
 - Named machine mappings with muscle group labels
 - Tracks best Rm1 per machine per day
 
+<img width="2330" height="1554" alt="Screenshot 2026-03-23 at 13 54 22" src="https://github.com/user-attachments/assets/889aef15-cd35-4fbe-a5a4-7bcd609d5c81" />
+
 ## Setup
 
 Requires Ruby 3.x and Bundler.
@@ -35,5 +37,3 @@ Click **↓ Sync from mywellness** on the dashboard to fetch your latest workout
 ## Data
 
 All data is stored locally in SQLite (`storage/development.sqlite3`). Nothing is sent anywhere except directly to `v1.mywellness.com` when syncing.
-
-The database is excluded from git — your workout data stays on your machine.
