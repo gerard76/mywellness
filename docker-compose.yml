@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storage:/storage
+      - ./tmp:/myapp/tmp
+      - ./log:/myapp/log
+    environment:
+      RAILS_ENV: production
+      SECRET_KEY_BASE: change-me-in-production
+    command: bundle exec puma -C config/puma.rb

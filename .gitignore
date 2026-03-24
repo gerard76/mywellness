@@ -7,6 +7,8 @@
 # Temp files
 /tmp/*
 !/tmp/.keep
+/tmp/pids/*
+!/tmp/pids/.keep
 
 # Logs
 /log/*
