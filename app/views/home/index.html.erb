@@ -131,7 +131,8 @@ const allDates = <%= raw all_dates.to_json %>;
 
 function fmt(d) {
   const [, m, day] = d.split('-');
-  return `${parseInt(day)} Mar`;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(day)} ${months[parseInt(m) - 1]}`;
 }
 
 function colorFor(d, i) {
