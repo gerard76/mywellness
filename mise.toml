@@ -1,0 +1,6 @@
+[tools]
+ruby = "3.4.5"
+
+[tasks.server]
+description = 'Run the rails server on port 2999'
+run = 'PORT=2999 bundle exec rails server'
