@@ -6,6 +6,7 @@
   <%= yield :head %>
   <title>Mywellness Tracker</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="/application.js" defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -101,6 +102,9 @@
     .btn.primary { background: var(--text); color: var(--bg); border-color: var(--text); }
     .btn.primary:hover { opacity: .85; }
     .btn.small { padding: 3px 10px; font-size: 12px; }
+    .btn.loading { opacity: .7; cursor: not-allowed; pointer-events: none; display: inline-flex; align-items: center; gap: 6px; }
+    @keyframes btn-spin { to { transform: rotate(360deg); } }
+    .btn-spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: btn-spin .7s linear infinite; flex-shrink: 0; }
 
     .upload-box { background: var(--bg2); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; max-width: 480px; }
     .upload-box label { display: block; font-size: 13px; color: var(--text2); margin-bottom: 8px; }

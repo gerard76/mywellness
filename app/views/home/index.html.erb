@@ -50,8 +50,8 @@
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
   <h1 style="margin:0">Dashboard</h1>
   <div style="display:flex; gap:8px;">
-    <%= form_with url: generate_sync_path, method: :post, local: true, style: "display:inline" do %>
-      <button type="submit" class="btn primary">↓ Sync from mywellness</button>
+    <%= form_with url: generate_sync_path, method: :post, local: true, style: "display:inline", id: "sync-form" do %>
+      <button type="submit" class="btn primary" id="sync-btn">↓ Sync from mywellness</button>
     <% end %>
   </div>
 </div>
