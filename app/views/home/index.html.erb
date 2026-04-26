@@ -165,6 +165,7 @@ const chart = new Chart(document.getElementById('mainChart').getContext('2d'), {
     plugins: {
       legend: { display: false },
       tooltip: {
+        itemSort: (a, b) => (b.raw ?? -Infinity) - (a.raw ?? -Infinity),
         callbacks: {
           title: items => items[0].label,
           label: item => item.raw != null ? ` ${item.dataset.label}: ${item.raw.toFixed(1)} kg` : null
