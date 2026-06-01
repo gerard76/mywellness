@@ -208,4 +208,95 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 </script>
 
+<% if @biometrics_data.any? %>
+<%
+  bio_colors = {
+    "Weight"           => "#185FA5",
+    "Muscle Mass"      => "#1D9E75",
+    "Muscle Mass Perc" => "#5DCAA5",
+    "Fat Mass"         => "#D85A30",
+    "BMI"              => "#9B59B6",
+    "Fat mass Perc"    => "#BA7517"
+  }
+  bio_dates = @biometrics_data.flat_map { |d| d[:data].map { |p| p[:date] } }
+                              .uniq.sort
+                              .select { |d| @bio_start_date.nil? || d >= @bio_start_date }
+%>
+
+<h2>Body metrics</h2>
+
+<div class="metric-row" style="margin-bottom:1.25rem;">
+  <% [["Weight","kg"],["Fat mass Perc","%"],["Muscle Mass Perc","%"]].each do |key, unit| %>
+    <% latest = @latest_biometrics[key] %>
+    <% next unless latest %>
+    <div class="metric-card">
+      <div class="label"><%= key %></div>
+      <div class="value"><%= latest[:value].to_s.sub(/\.0$/, '') %><% if unit.present? %><span style="font-size:.6em;font-weight:400;margin-left:2px"><%= unit %></span><% end %></div>
+      <div class="sub"><%= latest[:date] %></div>
+    </div>
+  <% end %>
+</div>
+
+<div class="chart-wrap"><canvas id="bioChart"></canvas></div>
+
+<script>
+(function() {
+  const bioData   = <%= raw @biometrics_data.to_json %>;
+  const bioDates  = <%= raw bio_dates.to_json %>;
+  const bioColors = <%= raw bio_colors.to_json %>;
+
+  function fmt(d) {
+    const [, m, day] = d.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${parseInt(day)} ${months[parseInt(m) - 1]}`;
+  }
+
+  const bioDatasets = bioData.map(d => {
+    const map = Object.fromEntries(d.data.map(p => [p.date, p.value]));
+    const color = bioColors[d.name] || '#888780';
+    return {
+      label: d.name,
+      unit: d.unit,
+      data: bioDates.map(dt => map[dt] ?? null),
+      borderColor: color,
+      backgroundColor: color + '22',
+      borderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      tension: 0.3,
+      spanGaps: false
+    };
+  });
+
+  new Chart(document.getElementById('bioChart').getContext('2d'), {
+    type: 'line',
+    data: { labels: bioDates.map(fmt), datasets: bioDatasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { color: '#888', font: { size: 11 } } },
+        tooltip: {
+          itemSort: (a, b) => (b.raw ?? -Infinity) - (a.raw ?? -Infinity),
+          callbacks: {
+            title: items => items[0].label,
+            label: item => {
+              if (item.raw == null) return null;
+              const unit = item.dataset.unit;
+              return ` ${item.dataset.label}: ${item.raw}${unit ? ' ' + unit : ''}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { color: '#888', font: { size: 11 }, maxRotation: 45 } },
+        y: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { color: '#888', font: { size: 11 } } }
+      }
+    }
+  });
+})();
+</script>
+<% end %>
+
 <% end %>

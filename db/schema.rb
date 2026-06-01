@@ -10,7 +10,16 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2024_01_01_000003) do
+ActiveRecord::Schema[7.2].define(version: 2026_05_30_052945) do
+  create_table "biometrics", force: :cascade do |t|
+    t.string "name", null: false
+    t.date "measured_on", null: false
+    t.float "value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name", "measured_on"], name: "index_biometrics_on_name_and_measured_on", unique: true
+  end
+
   create_table "machines", force: :cascade do |t|
     t.string "ph_id", null: false
     t.string "name"

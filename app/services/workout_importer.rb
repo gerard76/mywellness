@@ -12,20 +12,46 @@ class WorkoutImporter
   def import_zip(zip_path)
     Zip::File.open(zip_path) do |zip|
       zip.each do |entry|
-        next unless entry.name.end_with?(".json") &&
-                    File.basename(entry.name).start_with?("indooractivities")
-        import_json_data(entry.get_input_stream.read)
+        next unless entry.name.end_with?(".json")
+        base = File.basename(entry.name)
+        if base.start_with?("indooractivities")
+          import_json_data(entry.get_input_stream.read)
+        elsif base.start_with?("biometrics")
+          import_biometrics_data(entry.get_input_stream.read)
+        end
       end
     end
     self
   end
 
   def import_json(content)
-    import_json_data(content)
+    raw = content.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?")
+    parsed = JSON.parse(raw)
+    if parsed.is_a?(Array) && parsed.first&.key?("measuredOn")
+      import_biometrics_data(content)
+    else
+      import_json_data(content)
+    end
     self
   end
 
   private
+
+  def import_biometrics_data(raw)
+    entries = JSON.parse(raw.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?"))
+    return unless entries.is_a?(Array)
+
+    entries.each do |e|
+      name        = e["name"]
+      measured_on = e["measuredOn"]&.first(10)
+      value       = e["value"].to_f
+      next unless name && measured_on
+
+      Biometric.find_or_create_by!(name: name, measured_on: measured_on) do |b|
+        b.value = value
+      end
+    end
+  end
 
   def import_json_data(raw)
     sessions = JSON.parse(raw.encode("UTF-8", invalid: :replace, undef: :replace, replace: "?"))

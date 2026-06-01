@@ -1,7 +1,48 @@
 class HomeController < ApplicationController
+  BIOMETRIC_UNITS = {
+    "Weight"           => "kg",
+    "Muscle Mass"      => "kg",
+    "Muscle Mass Perc" => "%",
+    "Fat Mass"         => "kg",
+    "BMI"              => "",
+    "Fat mass Perc"    => "%"
+  }.freeze
+
   def index
     @notice  = params[:notice]
     @alert   = params[:alert]
+
+    stored_names = BIOMETRIC_UNITS.keys - ["Muscle Mass Perc"]
+    biometrics = Biometric.where(name: stored_names).order(:measured_on)
+    @biometrics_data = biometrics.group_by(&:name).map do |name, records|
+      {
+        name:  name,
+        unit:  BIOMETRIC_UNITS[name] || "",
+        data:  records.map { |b| { date: b.measured_on.to_s, value: b.value.round(2) } }
+      }
+    end
+
+    weight_by_date  = @biometrics_data.find { |d| d[:name] == "Weight" }&.dig(:data)&.index_by { |p| p[:date] } || {}
+    muscle_by_date  = @biometrics_data.find { |d| d[:name] == "Muscle Mass" }&.dig(:data)&.index_by { |p| p[:date] } || {}
+    muscle_pct_data = (weight_by_date.keys & muscle_by_date.keys).sort.filter_map do |date|
+      w = weight_by_date[date][:value]
+      m = muscle_by_date[date][:value]
+      next unless w && w > 0
+      { date: date, value: (m / w * 100).round(1) }
+    end
+    unless muscle_pct_data.empty?
+      @biometrics_data.insert(
+        @biometrics_data.index { |d| d[:name] == "Muscle Mass" }.to_i + 1,
+        { name: "Muscle Mass Perc", unit: "%", data: muscle_pct_data }
+      )
+    end
+
+    biometric_names = BIOMETRIC_UNITS.keys
+    @biometrics_data.sort_by! { |d| biometric_names.index(d[:name]) || 999 }
+    @latest_biometrics = @biometrics_data.each_with_object({}) do |d, h|
+      h[d[:name]] = d[:data].last
+    end
+    @bio_start_date = @biometrics_data.filter_map { |d| d[:data].first&.dig(:date) }.max
 
     sessions = WorkoutSession.joins(:machine)
                              .select("workout_sessions.*, machines.name as machine_name, machines.muscle_group, machines.ph_id")
