@@ -1,4 +1,9 @@
 class HomeController < ApplicationController
+  # On this day the machines ran a one-rep max test instead of the usual sets, so
+  # the numbers are real but two to four times a normal session and they flatten
+  # every chart. Kept in the database, left out of the graphs.
+  MAX_TEST_DATES = [Date.new(2026, 3, 2)].freeze
+
   BIOMETRIC_UNITS = {
     "Weight"           => "kg",
     "Muscle Mass"      => "kg",
@@ -51,8 +56,12 @@ class HomeController < ApplicationController
     sessions = WorkoutSession.joins(:machine)
                              .select("workout_sessions.*, machines.name as machine_name, machines.muscle_group, machines.ph_id")
                              .order(:workout_date)
+                             .to_a
 
-    grouped = sessions.group_by(&:ph_id)
+    # Every training day, including the max test - it was a workout.
+    @workout_dates = sessions.map { |s| s.workout_date.to_s }.uniq.sort
+
+    grouped = sessions.reject { |s| MAX_TEST_DATES.include?(s.workout_date) }.group_by(&:ph_id)
 
     @chart_data = grouped.map do |ph_id, ws|
       machine = ws.first
@@ -66,9 +75,8 @@ class HomeController < ApplicationController
 
     @progress = @chart_data.map do |d|
       next if d[:data].size < 2
-      # Skip the first date (2026-03-02 calibration) — use second date as baseline
       dates = d[:data].map { |p| p[:date] }.uniq.sort
-      baseline_date = dates[1] || dates[0]
+      baseline_date = dates[0]
       baseline = d[:data].select { |p| p[:date] == baseline_date }.max_by { |p| p[:rm1] }
       latest   = d[:data].last
       next unless baseline && latest && baseline[:date] != latest[:date]

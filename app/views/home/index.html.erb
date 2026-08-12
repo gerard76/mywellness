@@ -40,7 +40,7 @@
     "#888780","#5F5E5A"
   ]
 
-  all_dates = @chart_data.flat_map { |d| d[:data].map { |p| p[:date] } }.uniq.sort
+  all_dates = @workout_dates
   total_days = all_dates.size
 
   best = @progress.max_by { |p| p[:pct_change] }
