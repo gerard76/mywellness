@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_05_30_052945) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_12_062018) do
   create_table "biometrics", force: :cascade do |t|
     t.string "name", null: false
     t.date "measured_on", null: false
@@ -44,7 +44,7 @@ ActiveRecord::Schema[7.2].define(version: 2026_05_30_052945) do
     t.float "total_iso_weight"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["machine_id", "workout_date"], name: "index_workout_sessions_on_machine_id_and_workout_date"
+    t.index ["machine_id", "workout_date"], name: "index_workout_sessions_on_machine_id_and_workout_date", unique: true
     t.index ["machine_id"], name: "index_workout_sessions_on_machine_id"
   end
 

@@ -39,10 +39,14 @@ class HomeController < ApplicationController
 
     biometric_names = BIOMETRIC_UNITS.keys
     @biometrics_data.sort_by! { |d| biometric_names.index(d[:name]) || 999 }
-    @latest_biometrics = @biometrics_data.each_with_object({}) do |d, h|
-      h[d[:name]] = d[:data].last
-    end
     @bio_start_date = @biometrics_data.filter_map { |d| d[:data].first&.dig(:date) }.max
+    @latest_biometrics = @biometrics_data.each_with_object({}) do |d, h|
+      latest   = d[:data].last
+      baseline = d[:data].find { |p| @bio_start_date.nil? || p[:date] >= @bio_start_date }
+      change   = latest && baseline && latest != baseline ? (latest[:value] - baseline[:value]).round(2) : nil
+      pct      = change && baseline[:value] != 0 ? (change / baseline[:value] * 100).round(1) : nil
+      h[d[:name]] = latest&.merge(change: change, pct_change: pct, since: baseline&.dig(:date))
+    end
 
     sessions = WorkoutSession.joins(:machine)
                              .select("workout_sessions.*, machines.name as machine_name, machines.muscle_group, machines.ph_id")
