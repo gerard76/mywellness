@@ -40,8 +40,8 @@ class WorkoutImporter
       next if exercise["doneProperties"].blank?
 
       ph_id = exercise["physicalActivityId"]
-      rm1   = named_value(exercise["userReferenceValues"], "Rm1")
       tiw   = named_value(exercise["doneProperties"], "TotalIsoWeight")
+      rm1   = estimated_rm1(exercise, tiw)
       next unless ph_id.present? && rm1 && rm1 > 0
 
       upsert_session(machines_cache, ph_id, date, rm1, tiw)
@@ -146,5 +146,23 @@ class WorkoutImporter
 
   def named_value(collection, name)
     (collection || []).find { |item| item["name"] == name }&.dig("value")
+  end
+
+  # The one-rep max for the set actually performed, via Epley:
+  #
+  #   1RM = weight * (1 + reps / 30)
+  #
+  # Do not reach for userReferenceValues["Rm1"] here. That is the 1RM stored on
+  # the profile from the last max test, identical on every set until retested,
+  # and using it flatlines the chart. Reps are not reported directly, but the
+  # machine gives total weight lifted and the weight per rep.
+  def estimated_rm1(exercise, total_iso_weight)
+    weight = named_value(exercise["propertyCounters"], "IsoWeight")
+    return nil unless weight && weight > 0 && total_iso_weight
+
+    reps = total_iso_weight / weight
+    return nil unless reps >= 1
+
+    weight * (1 + reps / 30.0)
   end
 end
