@@ -50,7 +50,7 @@
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
   <h1 style="margin:0">Dashboard</h1>
   <div style="display:flex; gap:8px;">
-    <%= form_with url: generate_sync_path, method: :post, local: true, style: "display:inline", id: "sync-form" do %>
+    <%= form_with url: sync_path, method: :post, local: true, style: "display:inline", id: "sync-form" do %>
       <button type="submit" class="btn primary" id="sync-btn">↓ Sync from mywellness</button>
     <% end %>
   </div>
@@ -226,13 +226,22 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 <h2>Body metrics</h2>
 
 <div class="metric-row" style="margin-bottom:1.25rem;">
-  <% [["Weight","kg"],["Fat mass Perc","%"],["Muscle Mass Perc","%"]].each do |key, unit| %>
+  <% [["Weight","kg",nil],["Fat mass Perc","%","Fat Mass"],["Muscle Mass Perc","%","Muscle Mass"]].each do |key, unit, kg_key| %>
     <% latest = @latest_biometrics[key] %>
     <% next unless latest %>
+    <% kg = kg_key && @latest_biometrics[kg_key] %>
     <div class="metric-card">
       <div class="label"><%= key %></div>
       <div class="value"><%= latest[:value].to_s.sub(/\.0$/, '') %><% if unit.present? %><span style="font-size:.6em;font-weight:400;margin-left:2px"><%= unit %></span><% end %></div>
-      <div class="sub"><%= latest[:date] %></div>
+      <% if latest[:change] %>
+        <% change = latest[:change] %>
+        <% color = change.zero? ? "#888" : (change.positive? ? "#2e9e4f" : "#d23b3b") %>
+        <% arrow = change.zero? ? "" : (change.positive? ? "▲ " : "▼ ") %>
+        <div class="change" style="color:<%= color %>;font-size:.85em;font-weight:600;">
+          <%= arrow %><%= "%+.1f" % change %><%= unit %><% if kg && kg[:change] %><span style="color:#888;font-weight:400;margin-left:6px"><%= "%+.1f" % kg[:change] %>kg</span><% elsif kg.nil? && latest[:pct_change] %><span style="color:#888;font-weight:400;margin-left:6px"><%= "%+.1f" % latest[:pct_change] %>%</span><% end %>
+        </div>
+      <% end %>
+      <div class="sub"><% if latest[:since] && latest[:since] != latest[:date] %><%= latest[:since] %> → <% end %><%= latest[:date] %></div>
     </div>
   <% end %>
 </div>

@@ -6,10 +6,7 @@ Rails.application.routes.draw do
 
   resource :settings, only: [:show, :update]
 
-  resource :sync, only: [], controller: "sync" do
-    post :generate
-    get  :poll
-  end
+  resource :sync, only: [:create], controller: "sync"
 
   get "up" => "rails/health#show", as: :rails_health_check
 end
